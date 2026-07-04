@@ -1,138 +1,21 @@
 local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoid = character:WaitForChild("Humanoid")
+local camera = workspace.CurrentCamera
 
-player.CharacterAdded:Connect(function(char)
-	character = char
-	humanoid = char:WaitForChild("Humanoid")
-end)
-
-local forwardButton = Instance.new("TextButton")
-forwardButton.Size = UDim2.new(0, 60, 0, 60)
-forwardButton.Position = UDim2.new(1, -80, 1, -180)
-forwardButton.AnchorPoint = Vector2.new(0, 0)
-forwardButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-forwardButton.BackgroundTransparency = 0.2
-forwardButton.Text = "↑"
-forwardButton.TextScaled = true
-forwardButton.TextColor3 = Color3.new(1, 1, 1)
-forwardButton.Parent = gui
-
-local moving = false
-
-forwardButton.MouseButton1Down:Connect(function()
-	moving = true
-end)
-
-forwardButton.MouseButton1Up:Connect(function()
-	moving = false
-end)
-
-forwardButton.TouchLongPress:Connect(function(_, state)
-	if state == Enum.UserInputState.Begin then
-		moving = true
-	elseif state == Enum.UserInputState.End then
-		moving = false
-	end
-end)
-
-RunService.RenderStepped:Connect(function()
-	if moving and humanoid then
-		humanoid:Move(Vector3.new(0, 0, -1), false)
-	end
-end)local UIS = game:GetService("UserInputService")
-
-local dragging = false
-local dragEnabled = false
-local holdStart = 0
-
-moveButton.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.Touch
-	or input.UserInputType == Enum.UserInputType.MouseButton1 then
-
-		holdStart = tick()
-		dragEnabled = false
-
-		task.spawn(function()
-			while tick() - holdStart < 5 do
-				if not UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
-				and #UIS:GetTouches() == 0 then
-					return
-				end
-				task.wait()
-			end
-
-			dragEnabled = true
-			dragging = true
-			moveButton.Text = "✥"
-		end)
-	end
-end)
-
-moveButton.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.Touch
-	or input.UserInputType == Enum.UserInputType.MouseButton1 then
-
-		dragging = false
-		dragEnabled = false
-		moveButton.Text = "≡"
-	end
-end)
-
-UIS.InputChanged:Connect(function(input)
-	if not dragging then
-		return
-	end
-
-	if input.UserInputType == Enum.UserInputType.Touch
-	or input.UserInputType == Enum.UserInputType.MouseMovement then
-
-		local pos = input.Position
-
-		holder.Position = UDim2.new(
-			0,
-			pos.X - holder.AbsoluteSize.X / 2,
-			0,
-			pos.Y - holder.AbsoluteSize.Y / 2
-		)
-	end
-end)local camera = workspace.CurrentCamera
-local cooldown = false
-
-local function rotateCamera(degrees)
-	if cooldown then
-		return
-	end
-
-	cooldown = true
-
-	local cf = camera.CFrame
-	local pos = cf.Position
-
-	camera.CFrame = cf * CFrame.Angles(0, math.rad(degrees), 0)
-
-	task.delay(0.25, function()
-		cooldown = false
-	end)
-end
-
-leftButton.MouseButton1Click:Connect(function()
-	rotateCamera(-45)
-end)
-
-rightButton.MouseButton1Click:Connect(function()
-	rotateCamera(45)
-end)local Players = game:GetService("Players")
-
-local player = Players.LocalPlayer
+----------------------------------------------------
+-- GUI 생성
+----------------------------------------------------
 local gui = Instance.new("ScreenGui")
 gui.Name = "MobileControls"
 gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
+----------------------------------------------------
+-- 방향 버튼 UI
+----------------------------------------------------
 local holder = Instance.new("Frame")
 holder.Size = UDim2.new(0, 220, 0, 70)
 holder.Position = UDim2.new(0.5, -110, 1, -100)
@@ -154,57 +37,192 @@ end
 
 local leftButton = createButton("◀", 0)
 local moveButton = createButton("≡", 80)
-local rightButton = createButton("▶", 160)Move.InputEnded:Connect(function(input)
+local rightButton = createButton("▶", 160)
+
+----------------------------------------------------
+-- 카메라 회전
+----------------------------------------------------
+local cooldown = false
+
+local function rotateCamera(deg)
+	if cooldown then return end
+	cooldown = true
+
+	camera.CFrame = camera.CFrame * CFrame.Angles(0, math.rad(deg), 0)
+
+	task.delay(0.25, function()
+		cooldown = false
+	end)
+end
+
+leftButton.MouseButton1Click:Connect(function()
+	rotateCamera(-45)
+end)
+
+rightButton.MouseButton1Click:Connect(function()
+	rotateCamera(45)
+end)
+
+----------------------------------------------------
+-- holder 드래그
+----------------------------------------------------
+local dragging = false
+local holdStart = 0
+
+moveButton.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.Touch
 	or input.UserInputType == Enum.UserInputType.MouseButton1 then
-		dragging = false
-		dragEnabled = false
-		Move.Text = "≡"
+
+		holdStart = tick()
+
+		task.spawn(function()
+			while tick() - holdStart < 5 do
+				if not UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
+				and #UIS:GetTouches() == 0 then
+					return
+				end
+				task.wait()
+			end
+
+			dragging = true
+			moveButton.Text = "✥"
+		end)
 	end
 end)
 
-Move.InputChanged:Connect(function(input)
+moveButton.InputEnded:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.Touch
-	or input.UserInputType == Enum.UserInputType.MouseMovement then
+	or input.UserInputType == Enum.UserInputType.MouseButton1 then
 
-		if dragEnabled then
-			dragging = true
-
-			local pos = input.Position
-			local guiPos = gui.AbsolutePosition
-
-			holder.Position = UDim2.new(
-				0,
-				pos.X - guiPos.X - holder.AbsoluteSize.X/2,
-				0,
-				pos.Y - guiPos.Y - holder.AbsoluteSize.Y/2
-			)
-		end
+		dragging = false
+		moveButton.Text = "≡"
 	end
 end)
 
 UIS.InputChanged:Connect(function(input)
-	if not dragging then
-		return
-	end
+	if not dragging then return end
 
 	if input.UserInputType == Enum.UserInputType.Touch
 	or input.UserInputType == Enum.UserInputType.MouseMovement then
 
 		local pos = input.Position
-		local guiPos = gui.AbsolutePosition
 
 		holder.Position = UDim2.new(
-			0,
-			pos.X - guiPos.X - holder.AbsoluteSize.X/2,
-			0,
-			pos.Y - guiPos.Y - holder.AbsoluteSize.Y/2
+			0, pos.X - holder.AbsoluteSize.X / 2,
+			0, pos.Y - holder.AbsoluteSize.Y / 2
 		)
 	end
 end)
 
-UIS.TouchEnded:Connect(function()
-	dragging = false
-	dragEnabled = false
-	Move.Text = "≡"
+----------------------------------------------------
+-- 캐릭터 이동
+----------------------------------------------------
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+
+player.CharacterAdded:Connect(function(char)
+	character = char
+	humanoid = char:WaitForChild("Humanoid")
+end)
+
+local forwardButton = Instance.new("TextButton")
+forwardButton.Size = UDim2.new(0, 60, 0, 60)
+forwardButton.Position = UDim2.new(1, -80, 1, -180)
+forwardButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+forwardButton.BackgroundTransparency = 0.2
+forwardButton.Text = "↑"
+forwardButton.TextScaled = true
+forwardButton.TextColor3 = Color3.new(1,1,1)
+forwardButton.Parent = gui
+
+local moving = false
+
+forwardButton.MouseButton1Down:Connect(function()
+	moving = true
+end)
+
+forwardButton.MouseButton1Up:Connect(function()
+	moving = false
+end)
+
+----------------------------------------------------
+-- 🔥 핵심 수정: 카메라 기준 이동
+----------------------------------------------------
+RunService.RenderStepped:Connect(function()
+	if moving and humanoid and camera then
+
+		local look = camera.CFrame.LookVector
+		local direction = Vector3.new(look.X, 0, look.Z)
+
+		if direction.Magnitude > 0 then
+			humanoid:Move(direction.Unit, false)
+		end
+	end
+end)
+
+----------------------------------------------------
+-- 🔥 앞으로 버튼 드래그 버튼 (완전 수정)
+----------------------------------------------------
+local moveForwardUI = Instance.new("TextButton")
+moveForwardUI.Size = UDim2.new(0, 60, 0, 30)
+
+-- forwardButton 기준 정확히 아래
+moveForwardUI.Position = UDim2.new(1, -80, 1, -115)
+
+moveForwardUI.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+moveForwardUI.BackgroundTransparency = 0.2
+moveForwardUI.Text = "≡"
+moveForwardUI.TextScaled = true
+moveForwardUI.TextColor3 = Color3.new(1,1,1)
+moveForwardUI.Parent = gui
+moveForwardUI.ZIndex = 10
+
+----------------------------------------------------
+-- 드래그 상태
+----------------------------------------------------
+local draggingForward = false
+local holdStartForward = 0
+
+moveForwardUI.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch
+	or input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+		holdStartForward = tick()
+
+		task.spawn(function()
+			while tick() - holdStartForward < 5 do
+				if not UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
+				and #UIS:GetTouches() == 0 then
+					return
+				end
+				task.wait()
+			end
+
+			draggingForward = true
+			moveForwardUI.Text = "✥"
+		end)
+	end
+end)
+
+moveForwardUI.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch
+	or input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+		draggingForward = false
+		moveForwardUI.Text = "≡"
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+	if not draggingForward then return end
+
+	if input.UserInputType == Enum.UserInputType.Touch
+	or input.UserInputType == Enum.UserInputType.MouseMovement then
+
+		local x = input.Position.X - forwardButton.AbsoluteSize.X / 2
+		local y = input.Position.Y - forwardButton.AbsoluteSize.Y / 2
+
+		forwardButton.Position = UDim2.new(0, x, 0, y)
+		moveForwardUI.Position = UDim2.new(0, x, 0, y + 65)
+	end
 end)
